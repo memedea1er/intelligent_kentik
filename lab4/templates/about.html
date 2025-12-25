@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О системе - Коллективные решения</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-card {
+            transition: transform 0.3s;
+            border: none;
+            border-left: 5px solid;
+            height: 100%;
+        }
+
+        .method-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn btn btn-light btn-lg shadow">
+        <i class="bi bi-arrow-left"></i> Назад
+    </a>
+
+    <div class="container py-5">
+        <div class="glass-card p-5">
+            <h1 class="display-4 fw-bold text-center mb-5">
+                <i class="bi bi-info-circle-fill me-3"></i>
+                О системе коллективных решений
+            </h1>
+
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <p class="lead text-center">
+                        Система для анализа и сравнения различных методов коллективного принятия решений
+                        на основе математической теории голосования.
+                    </p>
+                </div>
+            </div>
+
+            <h2 class="mb-4">Реализованные методы голосования</h2>
+
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-4">
+                    <div class="method-card card border-left-primary">
+                        <div class="card-body">
+                            <h4 class="card-title text-primary">
+                                <i class="bi bi-1-circle me-2"></i>Относительное большинство
+                            </h4>
+                            <p class="card-text">
+                                Победитель определяется по наибольшему количеству первых мест в рейтингах избирателей.
+                            </p>
+                            <small class="text-muted">Простой, но может не отражать мнение большинства</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="method-card card border-left-success">
+                        <div class="card-body">
+                            <h4 class="card-title text-success">
+                                <i class="bi bi-people me-2"></i>Победитель Кондорсе
+                            </h4>
+                            <p class="card-text">
+                                Кандидат, который побеждает всех остальных в попарных сравнениях.
+                            </p>
+                            <small class="text-muted">Может не существовать (парадокс Кондорсе)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="method-card card border-left-info">
+                        <div class="card-body">
+                            <h4 class="card-title text-info">
+                                <i class="bi bi-plus-slash-minus me-2"></i>Правило Копленда
+                            </h4>
+                            <p class="card-text">
+                                +1 за каждую победу, -1 за каждое поражение в попарных сравнениях.
+                            </p>
+                            <small class="text-muted">Всегда существует победитель</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="method-card card border-left-warning">
+                        <div class="card-body">
+                            <h4 class="card-title text-warning">
+                                <i class="bi bi-shield-check me-2"></i>Правило Симпсона
+                            </h4>
+                            <p class="card-text">
+                                Определяет кандидата с наибольшей минимальной поддержкой против любого другого.
+                            </p>
+                            <small class="text-muted">Минимизирует максимальное недовольство</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="method-card card border-left-danger">
+                        <div class="card-body">
+                            <h4 class="card-title text-danger">
+                                <i class="bi bi-list-ol me-2"></i>Модель Борда
+                            </h4>
+                            <p class="card-text">
+                                Взвешенные очки за позиции в рейтинге: больше очков за более высокие места.
+                            </p>
+                            <small class="text-muted">Учитывает все позиции в рейтинге</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="mb-4">Как использовать систему</h2>
+
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <div class="list-group mb-4">
+                        <div class="list-group-item">
+                            <h5 class="mb-2">1. Добавьте альтернативы</h5>
+                            <p class="mb-0">Введите названия вариантов или кандидатов для голосования.</p>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-2">2. Добавьте избирателей</h5>
+                            <p class="mb-0">Введите имена или идентификаторы участников голосования.</p>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-2">3. Проставьте ранжирования</h5>
+                            <p class="mb-0">Для каждого избирателя укажите порядок предпочтения альтернатив.</p>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-2">4. Проанализируйте результаты</h5>
+                            <p class="mb-0">Система автоматически применит все методы и покажет сравнительные результаты.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-5">
+                <h4 class="alert-heading">
+                    <i class="bi bi-lightbulb me-2"></i>Области применения
+                </h4>
+                <ul class="mb-0">
+                    <li>Выборы в организациях и сообществах</li>
+                    <li>Принятие коллективных решений в командах</li>
+                    <li>Академические исследования теории голосования</li>
+                    <li>Образовательные цели в математике и политологии</li>
+                </ul>
+            </div>
+
+            <div class="text-center mt-5">
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="bi bi-play-fill me-2"></i>Начать использование
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

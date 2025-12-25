@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система коллективных решений</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-card.winner {
+            border-left-color: var(--accent-color);
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+        }
+
+        .sortable-list {
+            min-height: 100px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .sortable-item {
+            background: white;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 6px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .sortable-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .sortable-item .rank {
+            background: var(--secondary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .winner-badge {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .table-hover tbody tr:hover {
+            background: linear-gradient(90deg, rgba(52, 152, 219, 0.1) 0%, rgba(41, 128, 185, 0.05) 100%);
+        }
+
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .tab-pane {
+            padding: 20px 0;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container py-4">
+        <!-- Заголовок -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="glass-card p-4 text-center">
+                    <h1 class="display-5 fw-bold text-dark mb-3">
+                        <i class="bi bi-graph-up-arrow me-2"></i>
+                        Экспертная система коллективных решений
+                    </h1>
+                    <p class="lead text-muted">
+                        Анализ результатов голосования с использованием различных математических методов
+                    </p>
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <a href="#setup" class="btn btn-primary btn-lg">
+                            <i class="bi bi-play-fill me-2"></i>Начать анализ
+                        </a>
+                        <a href="#results" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-bar-chart me-2"></i>Результаты
+                        </a>
+                        <a href="/about" class="btn btn-outline-dark btn-lg">
+                            <i class="bi bi-info-circle me-2"></i>О системе
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной контент -->
+        <div class="row">
+            <!-- Левая панель - Настройка -->
+            <div class="col-lg-6">
+                <div id="setup" class="glass-card p-4 mb-4">
+                    <h3 class="mb-4">
+                        <i class="bi bi-sliders me-2"></i>Настройка голосования
+                    </h3>
+
+                    <!-- Альтернативы -->
+                    <div class="mb-4">
+                        <h5>Альтернативы (кандидаты/варианты)</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" id="alternativeInput" class="form-control"
+                                   placeholder="Введите название альтернативы">
+                            <button class="btn btn-outline-primary" onclick="addAlternative()">
+                                <i class="bi bi-plus-lg"></i> Добавить
+                            </button>
+                        </div>
+                        <div id="alternativesList" class="sortable-list">
+                            <div class="text-muted text-center py-3">Добавьте альтернативы...</div>
+                        </div>
+                    </div>
+
+                    <!-- Избиратели -->
+                    <div class="mb-4">
+                        <h5>Избиратели</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" id="voterInput" class="form-control"
+                                   placeholder="Введите имя избирателя">
+                            <button class="btn btn-outline-primary" onclick="addVoter()">
+                                <i class="bi bi-plus-lg"></i> Добавить
+                            </button>
+                        </div>
+                        <div id="votersList" class="d-flex flex-wrap gap-2">
+                            <!-- Избиратели будут добавляться здесь -->
+                        </div>
+                    </div>
+
+                    <!-- Ранжирование -->
+                    <div id="rankingsSection" style="display: none;">
+                        <h5>Ранжирование альтернатив</h5>
+                        <div id="voterRankings" class="accordion">
+                            <!-- Ранжирования будут генерироваться здесь -->
+                        </div>
+                    </div>
+
+                    <!-- Кнопки управления -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button class="btn btn-primary flex-fill" onclick="analyzeVoting()">
+                            <i class="bi bi-calculator me-2"></i>Проанализировать
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadExample()">
+                            <i class="bi bi-file-earmark-text me-2"></i>Пример
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="resetAll()">
+                            <i class="bi bi-trash me-2"></i>Очистить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая панель - Результаты -->
+            <div class="col-lg-6">
+                <div id="results" class="glass-card p-4">
+                    <h3 class="mb-4">
+                        <i class="bi bi-trophy me-2"></i>Результаты анализа
+                    </h3>
+
+                    <!-- Сводная информация -->
+                    <div id="summaryInfo" class="mb-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="alert-heading mb-1">Сводка голосования</h6>
+                                    <span id="summaryText" class="text-muted"></span>
+                                </div>
+                                <div id="condorcetStatus" class="badge bg-success"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Методы голосования -->
+                    <div id="methodsResults">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-graph-up" style="font-size: 3rem;"></i>
+                            <p class="mt-3">Введите данные голосования и нажмите "Проанализировать"</p>
+                        </div>
+                    </div>
+
+                    <!-- График -->
+                    <div id="chartContainer" class="mt-4" style="display: none;">
+                        <div class="chart-container">
+                            <canvas id="resultsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица сравнения -->
+        <div id="comparisonTable" class="row mt-4" style="display: none;">
+            <div class="col-12">
+                <div class="glass-card p-4">
+                    <h4 class="mb-3">
+                        <i class="bi bi-table me-2"></i>Сравнение методов
+                    </h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Метод</th>
+                                    <th>Описание</th>
+                                    <th>Победитель</th>
+                                    <th>Результаты</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonBody">
+                                <!-- Данные будут добавлены здесь -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let alternatives = [];
+        let voters = [];
+        let rankings = {};
+        let currentResults = null;
+        let resultsChart = null;
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSortableLists();
+            loadExample(); // Загружаем пример при загрузке страницы
+        });
+
+        function initializeSortableLists() {
+            // Инициализация сортируемых списков для альтернатив
+            const alternativesList = document.getElementById('alternativesList');
+            Sortable.create(alternativesList, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onUpdate: updateRankingsDisplay
+            });
+        }
+
+        // Добавление альтернативы
+        function addAlternative() {
+            const input = document.getElementById('alternativeInput');
+            const name = input.value.trim();
+
+            if (name && !alternatives.includes(name)) {
+                alternatives.push(name);
+                renderAlternativesList();
+                input.value = '';
+                updateRankingsSection();
+            } else if (alternatives.includes(name)) {
+                alert('Такая альтернатива уже существует!');
+            }
+        }
+
+        // Добавление избирателя
+        function addVoter() {
+            const input = document.getElementById('voterInput');
+            const name = input.value.trim();
+
+            if (name && !voters.includes(name)) {
+                voters.push(name);
+                renderVotersList();
+                input.value = '';
+                updateRankingsSection();
+            } else if (voters.includes(name)) {
+                alert('Такой избиратель уже существует!');
+            }
+        }
+
+        // Отрисовка списка альтернатив
+        function renderAlternativesList() {
+            const list = document.getElementById('alternativesList');
+
+            if (alternatives.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center py-3">Добавьте альтернативы...</div>';
+                return;
+            }
+
+            list.innerHTML = alternatives.map((alt, index) => `
+                <div class="sortable-item" data-alt="${alt}">
+                    <span>${alt}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rank">${index + 1}</span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeAlternative('${alt}')">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Повторная инициализация Sortable
+            Sortable.create(list, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onUpdate: updateRankingsDisplay
+            });
+        }
+
+        // Отрисовка списка избирателей
+        function renderVotersList() {
+            const list = document.getElementById('votersList');
+
+            if (voters.length === 0) {
+                list.innerHTML = '<div class="text-muted">Добавьте избирателей...</div>';
+                return;
+            }
+
+            list.innerHTML = voters.map(voter => `
+                <div class="badge bg-primary p-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-person"></i>
+                    ${voter}
+                    <button class="btn btn-sm btn-light ms-2" onclick="removeVoter('${voter}')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Удаление альтернативы
+        function removeAlternative(name) {
+            alternatives = alternatives.filter(a => a !== name);
+            renderAlternativesList();
+            updateRankingsSection();
+        }
+
+        // Удаление избирателя
+        function removeVoter(name) {
+            voters = voters.filter(v => v !== name);
+            delete rankings[name];
+            renderVotersList();
+            updateRankingsSection();
+        }
+
+        // Обновление секции ранжирования
+        function updateRankingsSection() {
+            const section = document.getElementById('rankingsSection');
+            const container = document.getElementById('voterRankings');
+
+            if (alternatives.length >= 2 && voters.length >= 1) {
+                section.style.display = 'block';
+                container.innerHTML = voters.map(voter => createRankingPanel(voter)).join('');
+
+                // Инициализация Sortable для каждого панели
+                voters.forEach(voter => {
+                    const listId = `rankingList_${voter}`;
+                    const list = document.getElementById(listId);
+                    if (list) {
+                        Sortable.create(list, {
+                            animation: 150,
+                            ghostClass: 'sortable-ghost',
+                            onUpdate: () => saveRanking(voter)
+                        });
+                    }
+                });
+
+                // Восстановление сохраненных ранжирований
+                voters.forEach(voter => {
+                    if (rankings[voter]) {
+                        restoreRanking(voter, rankings[voter]);
+                    }
+                });
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Создание панели ранжирования для избирателя
+        function createRankingPanel(voter) {
+            const currentRanking = rankings[voter] || alternatives.slice();
+            return `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse${voter}">
+                            <i class="bi bi-person-circle me-2"></i>${voter}
+                            ${rankings[voter] ? '<span class="badge bg-success ms-2">✓</span>' : ''}
+                        </button>
+                    </h2>
+                    <div id="collapse${voter}" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <p class="text-muted small mb-2">Перетащите альтернативы для изменения порядка</p>
+                            <div id="rankingList_${voter}" class="sortable-list">
+                                ${currentRanking.map((alt, index) => `
+                                    <div class="sortable-item" data-alt="${alt}">
+                                        <span>${alt}</span>
+                                        <span class="rank">${index + 1}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary mt-3" onclick="resetRanking('${voter}')">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Сбросить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Сохранение ранжирования
+        function saveRanking(voter) {
+            const list = document.getElementById(`rankingList_${voter}`);
+            if (!list) return;
+
+            const items = Array.from(list.querySelectorAll('.sortable-item'));
+            const ranking = items.map(item => item.dataset.alt);
+            rankings[voter] = ranking;
+
+            // Обновить значок сохранения
+            const header = document.querySelector(`#collapse${voter}`).previousElementSibling;
+            const badge = header.querySelector('.badge');
+            if (!badge) {
+                header.innerHTML += '<span class="badge bg-success ms-2">✓</span>';
+            }
+        }
+
+        // Восстановление ранжирования
+        function restoreRanking(voter, ranking) {
+            const list = document.getElementById(`rankingList_${voter}`);
+            if (!list) return;
+
+            list.innerHTML = ranking.map((alt, index) => `
+                <div class="sortable-item" data-alt="${alt}">
+                    <span>${alt}</span>
+                    <span class="rank">${index + 1}</span>
+                </div>
+            `).join('');
+        }
+
+        // Сброс ранжирования
+        function resetRanking(voter) {
+            delete rankings[voter];
+            updateRankingsSection();
+        }
+
+        // Обновление отображения ранжирования после изменения порядка альтернатив
+        function updateRankingsDisplay() {
+            const items = Array.from(document.querySelectorAll('#alternativesList .sortable-item'));
+            const newOrder = items.map(item => item.dataset.alt);
+            alternatives = newOrder;
+
+            // Обновить ранжирования
+            Object.keys(rankings).forEach(voter => {
+                const oldRanking = rankings[voter];
+                const newRanking = newOrder.filter(alt => oldRanking.includes(alt));
+                rankings[voter] = newRanking;
+            });
+
+            updateRankingsSection();
+        }
+
+        // Анализ голосования
+        async function analyzeVoting() {
+            if (alternatives.length < 2) {
+                alert('Добавьте хотя бы 2 альтернативы!');
+                return;
+            }
+
+            if (voters.length < 1) {
+                alert('Добавьте хотя бы 1 избирателя!');
+                return;
+            }
+
+            // Проверить, что все избиратели проставили ранжирования
+            const missingVoters = voters.filter(v => !rankings[v]);
+            if (missingVoters.length > 0) {
+                alert('Не все избиратели проставили ранжирования!');
+                return;
+            }
+
+            showLoading(true);
+
+            const profile = {
+                alternatives: alternatives,
+                voters: voters,
+                rankings: rankings
+            };
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(profile)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentResults = data;
+                    displayResults(data);
+                } else {
+                    alert(data.error || 'Ошибка при анализе');
+                }
+            } catch (error) {
+                alert('Ошибка соединения с сервером');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Отображение результатов
+        function displayResults(data) {
+            // Сводная информация
+            const summary = document.getElementById('summaryInfo');
+            const summaryText = document.getElementById('summaryText');
+            const condorcetStatus = document.getElementById('condorcetStatus');
+
+            summary.style.display = 'block';
+            summaryText.textContent =
+                `${data.profile.alternatives.length} альтернатив, ${data.profile.voters.length} избирателей`;
+
+            condorcetStatus.textContent = data.has_condorcet_winner ?
+                'Есть победитель Кондорсе' : 'Нет победителя Кондорсе';
+            condorcetStatus.className = data.has_condorcet_winner ?
+                'badge bg-success' : 'badge bg-warning';
+
+            // Результаты по методам
+            const methodsContainer = document.getElementById('methodsResults');
+            methodsContainer.innerHTML = data.results.map((result, index) => `
+                <div class="method-card card mb-3 ${index === 0 ? 'winner' : ''}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title">
+                                    ${result.method}
+                                    ${index === 0 ? '<span class="winner-badge ms-2">Победитель</span>' : ''}
+                                </h5>
+                                <p class="card-text small text-muted">${result.details}</p>
+                                <h4 class="mt-3">
+                                    <i class="bi bi-trophy-fill text-warning me-2"></i>
+                                    ${result.winner}
+                                </h4>
+                            </div>
+                            <div class="text-end">
+                                <button class="btn btn-sm btn-outline-info" onclick="showMethodDetails(${index})">
+                                    <i class="bi bi-info-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            ${Object.entries(result.scores).map(([alt, score]) => `
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>${alt}</span>
+                                        <span class="fw-bold">${score}</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-${getColorForScore(score, result.scores)}"
+                                             role="progressbar"
+                                             style="width: ${calculatePercentage(score, result.scores)}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // График
+            showChart(data);
+
+            // Таблица сравнения
+            showComparisonTable(data);
+
+            // Прокрутка к результатам
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Расчет процента для прогресс-бара
+        function calculatePercentage(score, scores) {
+            const values = Object.values(scores).map(v => Math.abs(v));
+            const max = Math.max(...values);
+            return max === 0 ? 0 : (Math.abs(score) / max) * 100;
+        }
+
+        // Выбор цвета для прогресс-бара
+        function getColorForScore(score, scores) {
+            const values = Object.values(scores);
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+
+            if (score === max) return 'success';
+            if (score === min) return 'danger';
+            return 'info';
+        }
+
+        // Показ графика
+        function showChart(data) {
+            const container = document.getElementById('chartContainer');
+            container.style.display = 'block';
+
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+
+            // Если график уже существует, уничтожаем его
+            if (resultsChart) {
+                resultsChart.destroy();
+            }
+
+            // Подготовка данных для графика
+            const alternatives = data.profile.alternatives;
+            const datasets = data.results.map((result, index) => ({
+                label: result.method,
+                data: alternatives.map(alt => result.scores[alt] || 0),
+                borderColor: getChartColor(index),
+                backgroundColor: getChartColor(index, 0.2),
+                tension: 0.3
+            }));
+
+            resultsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: alternatives,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Баллы'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Получение цвета для графика
+        function getChartColor(index, alpha = 1) {
+            const colors = [
+                `rgba(52, 152, 219, ${alpha})`,    // Синий
+                `rgba(46, 204, 113, ${alpha})`,    // Зеленый
+                `rgba(155, 89, 182, ${alpha})`,    // Фиолетовый
+                `rgba(241, 196, 15, ${alpha})`,    // Желтый
+                `rgba(230, 126, 34, ${alpha})`     // Оранжевый
+            ];
+            return colors[index % colors.length];
+        }
+
+        // Показ таблицы сравнения
+        function showComparisonTable(data) {
+            const container = document.getElementById('comparisonTable');
+            const body = document.getElementById('comparisonBody');
+
+            container.style.display = 'block';
+            body.innerHTML = data.results.map(result => `
+                <tr>
+                    <td><strong>${result.method}</strong></td>
+                    <td><small class="text-muted">${result.details}</small></td>
+                    <td>
+                        <span class="badge bg-primary p-2">${result.winner}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${Object.entries(result.scores).map(([alt, score]) => `
+                                <span class="badge bg-light text-dark">
+                                    ${alt}: ${score}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Показ деталей метода
+        function showMethodDetails(methodIndex) {
+            if (!currentResults) return;
+
+            const method = currentResults.results[methodIndex];
+            const details = `
+                Метод: ${method.method}
+                Победитель: ${method.winner}
+
+                Результаты:
+                ${Object.entries(method.scores).map(([alt, score]) =>
+                    `${alt}: ${score}`
+                ).join('\n')}
+
+                ${method.details}
+            `;
+
+            alert(details);
+        }
+
+        // Загрузка примера
+        async function loadExample() {
+            try {
+                const response = await fetch('/api/example');
+                const example = await response.json();
+
+                alternatives = example.alternatives;
+                voters = example.voters;
+                rankings = example.rankings;
+
+                renderAlternativesList();
+                renderVotersList();
+                updateRankingsSection();
+
+                // Автоматически запустить анализ
+                setTimeout(() => analyzeVoting(), 1000);
+            } catch (error) {
+                console.error('Ошибка загрузки примера:', error);
+            }
+        }
+
+        // Сброс всех данных
+        function resetAll() {
+            if (!confirm('Вы уверены, что хотите очистить все данные?')) return;
+
+            alternatives = [];
+            voters = [];
+            rankings = {};
+            currentResults = null;
+
+            document.getElementById('alternativeInput').value = '';
+            document.getElementById('voterInput').value = '';
+
+            renderAlternativesList();
+            renderVotersList();
+            updateRankingsSection();
+
+            // Скрыть результаты
+            document.getElementById('summaryInfo').style.display = 'none';
+            document.getElementById('methodsResults').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-graph-up" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Введите данные голосования и нажмите "Проанализировать"</p>
+                </div>
+            `;
+            document.getElementById('chartContainer').style.display = 'none';
+            document.getElementById('comparisonTable').style.display = 'none';
+        }
+
+        // Показать/скрыть загрузку
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
